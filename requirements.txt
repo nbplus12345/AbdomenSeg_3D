@@ -1,0 +1,12 @@
+numpy<2.0.0
+tqdm~=4.67.3
+tensorboard
+setuptools
+
+torch
+torchvision
+
+monai
+nibabel
+SimpleITK
+nnunetv2

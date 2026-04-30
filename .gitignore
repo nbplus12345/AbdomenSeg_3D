@@ -1,0 +1,28 @@
+# ==========================================
+# SpleenSeg_UNet .gitignore 配置
+# ==========================================
+
+data/*
+!data/.gitkeep
+*.nii
+*.nii.gz
+*.dcm
+
+output/tensorboard/*
+!output/tensorboard/.gitkeep
+
+output/weights/*
+!output/weights/.gitkeep
+
+output/predictions/*
+!output/predictions/.gitkeep
+
+*.pth
+*.pt
+latest_checkpoint.pth
+
+__pycache__/
+.idea/
+.vscode/
+.DS_Store
+model/
