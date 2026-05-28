@@ -172,3 +172,37 @@ def get_3d_dataloaders(config):
     )
 
     return train_loader, val_loader
+
+
+def get_test_dataloader(config):
+    """专门用于测试集的 DataLoader，跳过训练集加载"""
+    # 如果配置文件中有单独的 test_images，则用 test，否则暂时回退使用 val 作为测试集
+    test_images_path = getattr(config.paths, "test_images", config.paths.val_images)
+    test_labels_path = getattr(config.paths, "test_labels", config.paths.val_labels)
+
+    test_images = sorted(glob.glob(os.path.join(test_images_path, "*.nii.gz")))
+    test_labels = sorted(glob.glob(os.path.join(test_labels_path, "*.nii.gz")))
+
+    test_files = [
+        {"image": img, "label": lbl} for img, lbl in zip(test_images, test_labels)
+    ]
+
+    # 获取验证集/测试集通用的预处理 Pipeline
+    _, val_transforms = get_3d_transforms(config)
+
+    test_ds = CacheDataset(
+        data=test_files,
+        transform=val_transforms,
+        cache_rate=1.0,
+        num_workers=config.train.num_worker,
+    )
+
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=1,  # 3D 测试 batch_size 必须为 1
+        shuffle=False,
+        num_workers=config.train.num_worker,
+        pin_memory=True,
+    )
+
+    return test_loader

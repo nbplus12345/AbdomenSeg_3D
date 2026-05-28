@@ -1,0 +1,30 @@
+[2026-05-28 16:14:09] 
+[2026-05-28 16:14:09] === Testing Pre-flight Checklist ===✈
+[2026-05-28 16:14:09] [INFO] Device set to: cuda
+[2026-05-28 16:14:21] [INFO] Test dataset loaded. Samples: 6
+[2026-05-28 16:14:21] [INFO] Initializing MONAI 3D UNet architecture...
+[2026-05-28 16:14:21] [INFO] Loading weights from: ./output/weights/monai_3d_best_model.pth
+[2026-05-28 16:14:21] [INFO] Model weights loaded successfully. Ready for inference.
+[2026-05-28 16:14:21] ===========================
+[2026-05-28 16:14:21] 
+===== Testing Started ====✈
+
+[2026-05-28 16:14:21] ===========================
+[2026-05-28 16:14:24] [RESULT] Overall Mean Dice Score: 3.15%
+[2026-05-28 16:14:24] ----------------------------------------------------------
+[2026-05-28 16:14:24] [RESULT] Per-class Dice Scores:
+[2026-05-28 16:14:24]          Spleen         : 0.00%
+[2026-05-28 16:14:24]          Right Kidney   : 0.00%
+[2026-05-28 16:14:24]          Left Kidney    : 0.00%
+[2026-05-28 16:14:24]          Gallbladder    : 0.00%
+[2026-05-28 16:14:24]          Esophagus      : 0.00%
+[2026-05-28 16:14:24]          Liver          : 41.00%
+[2026-05-28 16:14:24]          Stomach        : 0.00%
+[2026-05-28 16:14:24]          Aorta          : 0.00%
+[2026-05-28 16:14:24]          IVC            : 0.00%
+[2026-05-28 16:14:24]          Portal Vein    : 0.00%
+[2026-05-28 16:14:24]          Pancreas       : 0.00%
+[2026-05-28 16:14:24]          Right Adrenal  : 0.00%
+[2026-05-28 16:14:24]          Left Adrenal   : 0.00%
+[2026-05-28 16:14:24] ==========================================================
+[2026-05-28 16:14:24] [INFO] Testing finished successfully. Mission accomplished.

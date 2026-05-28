@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import shutil
 
 from config_utils import get_args, load_config
@@ -38,13 +39,45 @@ def split_medical_dataset(
         return
 
     # 2. 校验 Label 是否一一对应
-    for img_name in image_files:
-        lbl_name = img_name.replace(".nii.gz", "_seg.nii.gz")
-        label_path = os.path.join(src_label_dir, lbl_name)
-        if not os.path.exists(label_path):
-            raise FileNotFoundError(
-                f"[ERROR] Corresponding label file not found: {label_path}"
+    label_files = sorted([f for f in os.listdir(src_label_dir) if f.endswith(".nii.gz")])
+
+    def extract_case_id(filename, prefix):
+        match = re.fullmatch(rf"{re.escape(prefix)}(\d+)\.nii\.gz", filename)
+        if match is None:
+            raise ValueError(
+                f"[ERROR] Invalid {prefix} file name: {filename}. "
+                f"Expected format like {prefix}0001.nii.gz"
             )
+        return match.group(1)
+
+    label_by_id = {}
+    for lbl_name in label_files:
+        case_id = extract_case_id(lbl_name, "label")
+        if case_id in label_by_id:
+            raise ValueError(
+                f"[ERROR] Duplicate label id {case_id}: "
+                f"{label_by_id[case_id]} and {lbl_name}"
+            )
+        label_by_id[case_id] = lbl_name
+
+    image_ids = set()
+    label_by_image = {}
+    for img_name in image_files:
+        case_id = extract_case_id(img_name, "img")
+        image_ids.add(case_id)
+        lbl_name = label_by_id.get(case_id)
+        if lbl_name is None:
+            raise FileNotFoundError(
+                f"[ERROR] Corresponding label file not found for {img_name}. "
+                f"Expected label id: {case_id}"
+            )
+        label_by_image[img_name] = lbl_name
+
+    extra_label_ids = sorted(set(label_by_id) - image_ids)
+    if extra_label_ids:
+        raise FileNotFoundError(
+            f"[ERROR] Label files without corresponding images: {extra_label_ids}"
+        )
 
     # 3. 打乱数据
     random.shuffle(image_files)
@@ -78,11 +111,12 @@ def split_medical_dataset(
         for f in tqdm(file_list, desc=f"[INFO] Copying {subset_name} data"):
             # 原路径
             src_img = os.path.join(src_image_dir, f)
-            src_lbl = os.path.join(src_label_dir, f.replace(".nii.gz", "_seg.nii.gz"))
+            label_name = label_by_image[f]
+            src_lbl = os.path.join(src_label_dir, label_name)
 
             # 目标路径
             dst_img = os.path.join(output_root, subset_name, "images", f)
-            dst_lbl = os.path.join(output_root, subset_name, "labels", f)
+            dst_lbl = os.path.join(output_root, subset_name, "labels", label_name)
 
             shutil.copy2(src_img, dst_img)
             shutil.copy2(src_lbl, dst_lbl)
@@ -103,8 +137,8 @@ if __name__ == "__main__":
     # ==========================
     # 在这里修改为你的实际路径
     # ==========================
-    SOURCE_IMAGES = config.path.source_images
-    SOURCE_LABELS = config.path.source_labels
+    SOURCE_IMAGES = config.paths.source_images
+    SOURCE_LABELS = config.paths.source_labels
 
     # 我们希望输出到项目里的 dataset 目录
     OUTPUT_ROOT = "./data"

@@ -12,6 +12,8 @@ paths:
   weight_path: "./output/weights/monai_3d_best_model.pth"
   checkpoint_path: "./output/weights/monai_3d_latest.pth"
   log_dir: "./output/logs"
+  test_images: "./data/test/images"
+  test_labels: "./data/test/labels"
 
   # 3D 数据预处理参数
 data:
@@ -24,6 +26,7 @@ data:
   patch_size: [96, 96, 96]
   # 每次从一张完整 CT 中抠出多少个 Patch (相当于隐形的 batch multiplier)
   num_samples: 5
+  num_classes: 14
 
 train:
   num_worker: 0

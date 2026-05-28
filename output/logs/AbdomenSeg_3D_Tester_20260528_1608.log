@@ -1,0 +1,6 @@
+[2026-05-28 16:08:44] 
+[2026-05-28 16:08:44] === Testing Pre-flight Checklist ===✈
+[2026-05-28 16:08:44] [INFO] Device set to: cuda
+[2026-05-28 16:08:57] [INFO] Test dataset loaded. Samples: 6
+[2026-05-28 16:08:57] [INFO] Initializing MONAI 3D UNet architecture...
+[2026-05-28 16:08:57] [INFO] Loading weights from: ./output/weights/monai_3d_best_model.pth

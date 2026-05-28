@@ -9,4 +9,3 @@ torchvision
 monai
 nibabel
 SimpleITK
-nnunetv2

@@ -147,6 +147,18 @@ logger.info("")
 logger.info("\n===== Training Started ====✈\n")
 logger.info("==========================================================")
 
+
+# ETA 计算函数
+def format_eta(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours}h {minutes:02d}m {seconds:02d}s"
+
+
+avg_epoch_time = 0.0
+completed_epochs = 0
+
 # 开始 Epoch 循环
 for epoch in range(start_epoch, max_epochs):
     epoch_start_time = time.time()
@@ -240,12 +252,16 @@ for epoch in range(start_epoch, max_epochs):
             current_lr = optimizer.param_groups[0]["lr"]
 
             epoch_time = time.time() - epoch_start_time
+            completed_epochs += 1
+            avg_epoch_time += (epoch_time - avg_epoch_time) / completed_epochs
+            remaining_epochs = max_epochs - epoch - 1
+            eta = avg_epoch_time * remaining_epochs
             logger.info("----------------------------------------------------------")
             logger.info(
-                f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s"
+                f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s | ETA: {format_eta(eta)}"
             )
             logger.info(
-                f"  Lr : {current_lr:8f} |  Val Loss: {val_avg_loss:.4f}   | Val Dice  : {val_avg_dice:.4f}"
+                f"   Lr : {current_lr:8f} |  Val Loss: {val_avg_loss:.4f}   | Val Dice  : {val_avg_dice:.4f}"
             )
             logger.info("==========================================================")
 
@@ -286,8 +302,12 @@ for epoch in range(start_epoch, max_epochs):
                     break
     else:
         epoch_time = time.time() - epoch_start_time
+        completed_epochs += 1
+        avg_epoch_time += (epoch_time - avg_epoch_time) / completed_epochs
+        remaining_epochs = max_epochs - epoch - 1
+        eta = avg_epoch_time * remaining_epochs
         logger.info(
-            f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s"
+            f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s | ETA: {format_eta(eta)}"
         )
     checkpoint = {
         "epoch": epoch,
