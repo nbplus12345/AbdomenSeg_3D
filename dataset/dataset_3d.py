@@ -8,10 +8,12 @@ from monai.transforms import (
     EnsureChannelFirstd,
     LoadImaged,
     Orientationd,
+    RandAdjustContrastd,
     RandAffined,
     RandCropByPosNegLabeld,
     RandFlipd,
     RandGaussianNoised,
+    RandShiftIntensityd,
     ScaleIntensityRanged,
     Spacingd,
     SpatialPadd,
@@ -83,6 +85,32 @@ def get_3d_transforms(config):
             RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=1),
             RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=2),
             RandGaussianNoised(keys=["image"], prob=0.1, mean=0.0, std=0.1),
+            RandAffined(
+                keys=["image", "label"],
+                mode=("bilinear", "nearest"),
+                prob=0.5,
+                spatial_size=patch_size,
+                rotate_range=(0.1, 0.1, 0.1),
+                scale_range=(0.1, 0.1, 0.1),
+            ),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=0),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=1),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=2),
+            # --- 3D 数据增强 (强度与噪声) ---
+            # 适当调高高斯噪声的触发概率到 0.2
+            RandGaussianNoised(keys=["image"], prob=0.2, mean=0.0, std=0.1),
+            # 随机偏移图像整体亮度，模拟不同CT机的本底差异
+            RandShiftIntensityd(
+                keys=["image"],
+                offsets=0.10,
+                prob=0.5,
+            ),
+            # 随机 Gamma 对比度变换，增强模型对模糊边界器官的辨识力
+            RandAdjustContrastd(
+                keys=["image"],
+                prob=0.5,
+                gamma=(0.5, 2.0),
+            ),
         ]
     )
 
