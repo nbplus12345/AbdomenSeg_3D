@@ -1,7 +1,6 @@
 ﻿import glob
 import os
 import sys
-import time
 
 import torch
 from monai.data import CacheDataset, DataLoader, decollate_batch
@@ -19,22 +18,14 @@ from monai.transforms import (
 )
 from tqdm import tqdm
 from utils.config_utils import get_args, load_config
-from utils.logger_utils import Logger
 
 # ==========================================
-# 1. 初始化配置与日志系统
+# 1. 初始化配置
 # ==========================================
 config = load_config(get_args().config)
-current_time = time.strftime("%Y%m%d_%H%M")
-
-logger = Logger(
-    logger_name="AbdomenSeg_3D_Predictor",
-    log_file=os.path.join(config.paths.log_dir, f"AbdomenSeg_3D_Predictor_{current_time}.log"),
-).get_logger()
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logger.info("=== Start Inference & Save Pipeline ===")
-logger.info(f"[INFO] Device set to: {device}")
+print("=== Pre-flight Checklist ==✈")
+print(f"[INFO] Device set to: {device}")
 
 # ==========================================
 # 2. 构建专属的推理数据流
@@ -47,7 +38,7 @@ image_paths = sorted(glob.glob(os.path.join(inference_images_dir, "*.nii.gz")))
 
 # 构建字典，只有 "image" 键，没有 "label" 键
 infer_files = [{"image": img_path} for img_path in image_paths]
-logger.info(
+print(
     f"[INFO] Found {len(infer_files)} images to predict in {inference_images_dir}"
 )
 
@@ -79,12 +70,12 @@ infer_loader = DataLoader(infer_ds, batch_size=1, shuffle=False)
 # 设置保存预测结果的输出目录
 output_dir = os.path.join(config.paths.output_root, "predictions")
 os.makedirs(output_dir, exist_ok=True)
-logger.info(f"[INFO] Predictions will be saved to: {output_dir}")
+print(f"[INFO] Predictions will be saved to: {output_dir}")
 
 # ==========================================
 # 3. 初始化模型并加载权重
 # ==========================================
-logger.info("[INFO] Initializing MONAI 3D UNet architecture...")
+print("[INFO] Initializing MONAI 3D UNet architecture...")
 model = UNet(
     spatial_dims=3,
     in_channels=1,
@@ -96,11 +87,11 @@ model = UNet(
 
 weight_path = config.paths.weight_path
 if os.path.exists(weight_path):
-    logger.info(f"[INFO] Loading weights from: {weight_path}")
+    print(f"[INFO] Loading weights from: {weight_path}")
     model.load_state_dict(torch.load(weight_path, map_location=device))
     model.eval()
 else:
-    logger.error(f"[ERROR] Weight file not found at {weight_path}")
+    print(f"[ERROR] Weight file not found at {weight_path}")
     sys.exit(1)
 
 # ==========================================
@@ -121,9 +112,10 @@ saver = SaveImage(
     print_log=False,
 )
 
-logger.info("==========================================")
-logger.info("\n===== Prediction Started ====✈\n")
-logger.info("==========================================================")
+print("===========================")
+print("")
+print("===== Prediction Started ====✈")
+print("")
 
 # ==========================================
 # 5. 推理循环 (Inference Loop)
@@ -165,5 +157,4 @@ with torch.no_grad():
             # 4. 保存到硬盘
             saver(pred_mask)
 
-logger.info("==========================================================")
-logger.info(f"[INFO] Prediction finished! All masks are saved in: {output_dir}")
+print(f"[INFO] Prediction finished! All masks are saved in: {output_dir}")
