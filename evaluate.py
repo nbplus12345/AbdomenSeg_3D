@@ -27,7 +27,7 @@ current_time = time.strftime("%Y%m%d_%H%M")
 
 logger = Logger(
     logger_name="AbdomenSeg_3D_Tester",
-    log_file=f"output/logs/AbdomenSeg_3D_Tester_{current_time}.log",
+    log_file=os.path.join(config.paths.log_dir, f"AbdomenSeg_3D_Tester_{current_time}.log"),
 ).get_logger()
 
 # 进度条样式配置
@@ -40,7 +40,7 @@ TQDM_BASE_CONFIG = {
 }
 
 logger.info("")
-logger.info("=== Testing Pre-flight Checklist ===✈")
+logger.info("=== Pre-flight Checklist ==✈")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"[INFO] Device set to: {device}")
@@ -55,7 +55,7 @@ logger.info("[INFO] Initializing MONAI 3D UNet architecture...")
 model = UNet(
     spatial_dims=3,
     in_channels=1,
-    out_channels=14,
+    out_channels=config.data.num_classes,
     channels=(16, 32, 64, 128, 256),
     strides=(2, 2, 2, 2),
     num_res_units=2,
@@ -83,17 +83,18 @@ else:
 # 4. 初始化指标计算器与后处理
 # ==========================================
 # 将网络输出的概率图转为确定的 One-Hot 编码
-post_pred = AsDiscrete(argmax=True, to_onehot=14)
-post_label = AsDiscrete(to_onehot=14)
+post_pred = AsDiscrete(argmax=True, to_onehot=config.data.num_classes)
+post_label = AsDiscrete(to_onehot=config.data.num_classes)
 
 # 计算全局平均 Dice 和 各类别平均 Dice (均排除背景 0 类)
 dice_metric_mean = DiceMetric(include_background=False, reduction="mean")
 dice_metric_classes = DiceMetric(include_background=False, reduction="mean_batch")
 
 logger.info("===========================")
-logger.info("\n===== Testing Started ====✈\n")
-logger.info("===========================")
-
+logger.info("")
+logger.info("===== Testing Started ====✈")
+logger.info("")
+logger.info("========================================")
 # ==========================================
 # 5. 测试循环 (Test Loop)
 # ==========================================
@@ -136,7 +137,7 @@ dice_metric_mean.reset()
 dice_metric_classes.reset()
 
 logger.info(f"[RESULT] Overall Mean Dice Score: {mean_dice * 100:.2f}%")
-logger.info("----------------------------------------------------------")
+logger.info("----------------------------------------")
 logger.info("[RESULT] Per-class Dice Scores:")
 
 # BTCV 等腹部数据集常见的 13 个器官标签名称
@@ -164,5 +165,4 @@ for i, organ_name in enumerate(organ_names):
     else:
         logger.info(f"         {organ_name:<15}: N/A (Not in dataset)")
 
-logger.info("==========================================================")
-logger.info("[INFO] Testing finished successfully. Mission accomplished.")
+logger.info("========================================")

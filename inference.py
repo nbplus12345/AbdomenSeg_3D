@@ -1,4 +1,4 @@
-import glob
+﻿import glob
 import os
 import sys
 import time
@@ -29,7 +29,7 @@ current_time = time.strftime("%Y%m%d_%H%M")
 
 logger = Logger(
     logger_name="AbdomenSeg_3D_Predictor",
-    log_file=f"output/logs/AbdomenSeg_3D_Predictor_{current_time}.log",
+    log_file=os.path.join(config.paths.log_dir, f"AbdomenSeg_3D_Predictor_{current_time}.log"),
 ).get_logger()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,7 +88,7 @@ logger.info("[INFO] Initializing MONAI 3D UNet architecture...")
 model = UNet(
     spatial_dims=3,
     in_channels=1,
-    out_channels=14,
+    out_channels=config.data.num_classes,
     channels=(16, 32, 64, 128, 256),
     strides=(2, 2, 2, 2),
     num_res_units=2,

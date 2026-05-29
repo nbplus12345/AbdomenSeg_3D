@@ -21,12 +21,19 @@ warnings.filterwarnings(
     category=UserWarning,
     message="Using a non-tuple sequence for multidimensional indexing is deprecated",
 )
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=r".*Orientationd.__init__:labels.*",
+)
 config = load_config(get_args().config)
 total_start_time = time.time()
 current_time = time.strftime("%Y%m%d_%H%M")
 logger = Logger(
     logger_name="AbdomenSeg_3DUNet_Trainer",
-    log_file=f"output/logs/AbdomenSeg_3DUNet_Trainer_{current_time}.log",
+    log_file=os.path.join(
+        config.paths.log_dir, f"AbdomenSeg_3DUNet_Trainer_{current_time}.log"
+    ),
 ).get_logger()
 TQDM_BASE_CONFIG = {
     "file": sys.stdout,
@@ -37,7 +44,7 @@ TQDM_BASE_CONFIG = {
 }
 
 logger.info("")
-logger.info("=== Pre-flight Checklist ===✈")
+logger.info("=== Pre-flight Checklist ==✈")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"[INFO] Device set to: {device}")
@@ -52,7 +59,7 @@ logger.info(
 model = UNet(
     spatial_dims=3,  # 3D 网络
     in_channels=1,  # 输入 1 通道 (单模态 CT)
-    out_channels=14,  # 输出 14 个通道 (1背景 + 13器官)
+    out_channels=config.data.num_classes,  # 输出 14 个通道 (1背景 + 13器官)
     channels=(
         16,
         32,
@@ -135,9 +142,11 @@ if config.train.resume_training and os.path.exists(config.paths.checkpoint_path)
 # 初始化验证指标计算器
 # 遇到多分类问题，AsDiscrete 是必不可少的清洗工具
 post_pred = AsDiscrete(
-    argmax=True, to_onehot=14
+    argmax=True, to_onehot=config.data.num_classes
 )  # 将概率最大值提取出来，转为14通道one-hot
-post_label = AsDiscrete(to_onehot=14)  # 标签本身是0~13的整数，也转为14通道one-hot
+post_label = AsDiscrete(
+    to_onehot=config.data.num_classes
+)  # 标签本身是0~13的整数，也转为14通道one-hot
 dice_metric = DiceMetric(
     include_background=False, reduction="mean"
 )  # 计算所有 batch 的平均 Dice (不算背景)
@@ -145,7 +154,7 @@ dice_metric = DiceMetric(
 logger.info("============================")
 logger.info("")
 logger.info("\n===== Training Started ====✈\n")
-logger.info("==========================================================")
+logger.info("===========================================================")
 
 
 # ETA 计算函数
@@ -256,14 +265,14 @@ for epoch in range(start_epoch, max_epochs):
             avg_epoch_time += (epoch_time - avg_epoch_time) / completed_epochs
             remaining_epochs = max_epochs - epoch - 1
             eta = avg_epoch_time * remaining_epochs
-            logger.info("----------------------------------------------------------")
+            logger.info("-----------------------------------------------------------")
             logger.info(
-                f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s | ETA: {format_eta(eta)}"
+                f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s"
             )
             logger.info(
-                f"   Lr : {current_lr:8f} |  Val Loss: {val_avg_loss:.4f}   | Val Dice  : {val_avg_dice:.4f}"
+                f"   Lr : {current_lr:8f} |  Val Loss : {val_avg_loss:.4f}  | Val Dice  : {val_avg_dice:.4f}"
             )
-            logger.info("==========================================================")
+            logger.info("===========================================================")
 
             # 早停与保存最佳权重
             if val_avg_dice > best_val_dice:
@@ -273,20 +282,20 @@ for epoch in range(start_epoch, max_epochs):
                 # 保存最佳模型
                 torch.save(model.state_dict(), config.paths.weight_path)
                 logger.info(
-                    f"[SAVE] New best record ： {val_avg_dice * 100:.2f}% ! Model saved!"
+                    f"[SAVE] New best record : {val_avg_dice * 100:.2f}% ! Model saved ! ETA {format_eta(eta)}"
                 )
                 logger.info("")
                 logger.info(
-                    "=========================================================="
+                    "==========================================================="
                 )
             else:
                 counter += 1
                 logger.info(
-                    f"[WARN] No improvement. Patience: {counter}/{config.train.patience}"
+                    f"[WARN] No improvement. Patience: {counter}/{config.train.patience} ETA: {format_eta(eta)}"
                 )
                 logger.info("")
                 logger.info(
-                    "=========================================================="
+                    "==========================================================="
                 )
 
                 if counter >= config.train.patience:
@@ -297,7 +306,7 @@ for epoch in range(start_epoch, max_epochs):
                         f"       Final best Val Dice: {best_val_dice:.4f} | Time: {int(total_time // 60)}m {int(total_time % 60):02d}s"
                     )
                     logger.info(
-                        "=========================================================="
+                        "==========================================================="
                     )
                     break
     else:
@@ -307,7 +316,7 @@ for epoch in range(start_epoch, max_epochs):
         remaining_epochs = max_epochs - epoch - 1
         eta = avg_epoch_time * remaining_epochs
         logger.info(
-            f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s | ETA: {format_eta(eta)}"
+            f"[Epoch {epoch + 1:03d}/{max_epochs:03d}] | Train Loss: {epoch_train_avg_loss:.4f}  |   Time    : {int(epoch_time // 60)}m {int(epoch_time % 60):02d}s"
         )
     checkpoint = {
         "epoch": epoch,
